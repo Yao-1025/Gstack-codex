@@ -4,6 +4,13 @@ gstack is a collection of SKILL.md files that give AI agents structured roles fo
 software development. Each skill is a specialist: CEO reviewer, eng manager,
 designer, QA lead, release engineer, debugger, and more.
 
+## Codex execution
+
+- Choose skills and workflow steps for the requested outcome; the catalog below is a reference, not a mandatory sequence.
+- Treat legacy `AskUserQuestion` steps as conditional requests for missing information. Reuse existing answers; ask only when an unresolved choice materially changes the goal, scope, or result and cannot reasonably be inferred.
+- Follow the user's current instructions over skill defaults. Reuse existing scoped authorization for routine confirmations; prepare a concrete, reviewable result before asking for any additional authorization. Actual tool permission requirements still apply.
+- Complete the requested work and proportionate verification. A completed subtask or tool call does not by itself finish the user's goal.
+
 ## Available skills
 
 Skills live in `.agents/skills/` (or `~/.claude/skills/gstack/` on Claude Code).
