@@ -1,86 +1,144 @@
-# gstack development
+# gstack — AI Engineering Workflow
 
-This repository originally targeted Claude Code. The Codex port keeps the same workflow ideas, skill names, and browser tooling, but the active project instructions for Codex now live here.
+gstack is a collection of SKILL.md files that give AI agents structured roles for
+software development. Each skill is a specialist: CEO reviewer, eng manager,
+designer, QA lead, release engineer, debugger, and more.
 
-## Commands
+## Codex execution
+
+- Choose skills and workflow steps for the requested outcome; the catalog below is a reference, not a mandatory sequence.
+- Treat legacy `AskUserQuestion` steps as conditional requests for missing information. Reuse existing answers; ask only when an unresolved choice materially changes the goal, scope, or result and cannot reasonably be inferred.
+- Follow the user's current instructions over skill defaults. Reuse existing scoped authorization for routine confirmations; prepare a concrete, reviewable result before asking for any additional authorization. Actual tool permission requirements still apply.
+- Complete the requested work and proportionate verification. A completed subtask or tool call does not by itself finish the user's goal.
+
+## Available skills
+
+Skills live in `.agents/skills/` (or `~/.claude/skills/gstack/` on Claude Code).
+Invoke them by name (e.g., `/office-hours`).
+
+### Plan-mode reviews
+
+| Skill | What it does |
+|-------|-------------|
+| `/office-hours` | Start here. Reframes your product idea before you write code. |
+| `/plan-ceo-review` | CEO-level review: find the 10-star product in the request. |
+| `/plan-eng-review` | Lock architecture, data flow, edge cases, and tests. |
+| `/plan-design-review` | Rate each design dimension 0-10, explain what a 10 looks like. |
+| `/plan-devex-review` | DX-mode review: TTHW, magical moments, friction points, persona traces. |
+| `/plan-tune` | Self-tune AskUserQuestion sensitivity per question. |
+| `/autoplan` | One command runs CEO → design → DX → eng review (eng always last). |
+| `/design-consultation` | Build a complete design system from scratch. |
+| `/spec` | Turn vague intent into a precise, executable spec in five phases. Files a GitHub issue, optionally spawns a Claude Code agent in a fresh worktree, and lets `/ship` close the source issue on merge. |
+
+### Implementation + review
+
+| Skill | What it does |
+|-------|-------------|
+| `/review` | Pre-landing PR review. Finds bugs that pass CI but break in prod. |
+| `/codex` | Second opinion via OpenAI Codex. Review, challenge, or consult modes. |
+| `/investigate` | Systematic root-cause debugging. No fixes without investigation. |
+| `/design-review` | Live-site visual audit + fix loop with atomic commits. |
+| `/design-shotgun` | Generate multiple AI design variants, comparison board, iterate. |
+| `/design-html` | Generate production-quality Pretext-native HTML/CSS. |
+| `/devex-review` | Live developer experience audit (TTHW measured against the real flow). |
+| `/qa` | Open a real browser, find bugs, fix them, re-verify. |
+| `/qa-only` | Same methodology as /qa but report only — no code changes. |
+| `/scrape` | Pull data from a web page. First call prototypes; codified call runs in ~200ms. |
+| `/skillify` | Codify the most recent successful `/scrape` flow into a permanent browser-skill. |
+
+### Release + deploy
+
+| Skill | What it does |
+|-------|-------------|
+| `/ship` | Run tests, review, push, open PR. Workspace-aware version queue. |
+| `/land-and-deploy` | Merge the PR, wait for CI and deploy, verify production health. |
+| `/canary` | Post-deploy monitoring loop using the browse daemon. |
+| `/landing-report` | Read-only dashboard for the workspace-aware ship queue. |
+| `/document-release` | Update all docs to match what you just shipped. |
+| `/document-generate` | Generate Diataxis docs (tutorial / how-to / reference / explanation) from code. |
+| `/setup-deploy` | One-time deploy config detection (Fly.io, Render, Vercel, etc.). |
+| `/gstack-upgrade` | Update gstack to the latest version. |
+
+### Operational + memory
+
+| Skill | What it does |
+|-------|-------------|
+| `/context-save` | Save working context (git state, decisions, remaining work). |
+| `/context-restore` | Resume from a saved context, even across Conductor workspaces. |
+| `/learn` | Manage what gstack learned across sessions. |
+| `/retro` | Weekly retro with per-person breakdowns and shipping streaks. |
+| `/health` | Code quality dashboard (type checker, linter, tests, dead code). |
+| `/benchmark` | Performance regression detection (page load, Core Web Vitals). |
+| `/benchmark-models` | Cross-model benchmark for skills (Claude, GPT, Gemini side-by-side). |
+| `/cso` | OWASP Top 10 + STRIDE security audit. |
+| `/setup-gbrain` | Set up gbrain for cross-machine session memory sync. |
+| `/sync-gbrain` | Keep gbrain current with this repo's code; refresh agent search guidance in CLAUDE.md. |
+
+### Browser + agent integration
+
+| Skill | What it does |
+|-------|-------------|
+| `/browse` | Headless browser — real Chromium, real clicks, ~100ms/command. |
+| `/open-gstack-browser` | Launch the visible GStack Browser with sidebar + stealth. |
+| `/setup-browser-cookies` | Import cookies from your real browser for authenticated testing. |
+| `/pair-agent` | Pair a remote AI agent (OpenClaw, Codex, etc.) with your browser. |
+
+### iOS QA — drive real iPhones over USB or Tailscale (v1.43.0.0+)
+
+| Skill | What it does |
+|-------|-------------|
+| `/ios-qa` | Live-device iOS QA via USB CoreDevice tunnel + embedded StateServer. Optionally exposes the device over Tailscale so remote agents can drive it. |
+| `/ios-fix` | Autonomous iOS bug fixer with regression snapshot capture. |
+| `/ios-design-review` | Designer's-eye QA on a real iPhone — 10-dimension Apple HIG rubric. |
+| `/ios-clean` | Convenience: strip DebugBridge + #if DEBUG wiring before a Release build. |
+| `/ios-sync` | Regenerate the iOS debug bridge against the latest upstream templates. |
+
+Companion CLIs (run on the Mac that's plugged into the device):
+
+| Command | What it does |
+|---------|-------------|
+| `gstack-ios-qa-daemon` | Mac-side broker. Loopback by default; `--tailnet` adds a Tailscale-facing listener with capability tiers and audit logging. |
+| `gstack-ios-qa-mint` | Owner-grant CLI for the tailnet allowlist (`grant`/`revoke`/`list`). |
+| `gstack-ios-qa-regen` | Regenerate the canonical local DebugBridge package and typed accessors (`--app-source` / `--bridge-dir`). |
+
+End-to-end walkthrough: [docs/howto-ios-testing-with-gstack.md](docs/howto-ios-testing-with-gstack.md).
+
+### Safety + scoping
+
+| Skill | What it does |
+|-------|-------------|
+| `/careful` | Warn before destructive commands (rm -rf, DROP TABLE, force-push). |
+| `/freeze` | Lock edits to one directory. Hard block, not just a warning. |
+| `/guard` | Activate both careful + freeze at once. |
+| `/unfreeze` | Remove directory edit restrictions. |
+| `/make-pdf` | Turn any markdown file into a publication-quality PDF. |
+| `/diagram` | English in, diagram out: mermaid source + editable .excalidraw + SVG/PNG, offline. |
+
+## Build commands
 
 ```bash
-bun install             # install dependencies
-bun test                # run free tests (browse + snapshot + skill validation)
-bun run test:evals      # run evals: Codex CLI judge + Codex CLI E2E
-bun run test:e2e        # run E2E tests only
-bun run dev <cmd>       # run CLI in dev mode, e.g. bun run dev goto https://example.com
-bun run build           # generate docs + compile binaries
-bun run gen:skill-docs  # regenerate SKILL.md files from templates
-bun run skill:check     # health dashboard for all skills
-bun run dev:skill       # watch mode: auto-regen + validate on change
+bun install              # install dependencies
+bun run test             # run free tests via the strict shard runner (no API spend, ~90-100s)
+bun run test:windows     # curated Windows-safe subset (runs on windows-latest)
+bun run build            # generate docs + compile binaries
+bun run gen:skill-docs   # regenerate SKILL.md files from templates
+bun run skill:check      # health dashboard for all skills
 ```
 
-## Project structure
+## Platform support
 
-```text
-gstack/
-├── browse/          # Headless browser CLI (Playwright)
-├── scripts/         # Build + DX tooling
-├── test/            # Skill validation + eval tests
-├── qa/              # QA skill
-├── review/          # Code review skill
-├── ship/            # Release workflow skill
-├── design-consultation/
-├── plan-ceo-review/
-├── plan-eng-review/
-├── plan-design-review/
-├── qa-design-review/
-├── qa-only/
-├── retro/
-├── document-release/
-├── setup            # Build binary + register skill symlinks
-├── SKILL.md         # Generated from SKILL.md.tmpl
-├── SKILL.md.tmpl    # Edit templates, then regenerate
-└── package.json
-```
+- **macOS** + **Linux**: full test suite supported.
+- **Windows**: curated Windows-safe subset runs on `windows-latest` via the
+  `windows-free-tests` CI job. Setup script (`./setup`) requires Git Bash or
+  MSYS today; native PowerShell support is a future expansion. The `bin/gstack-paths`
+  helper resolves state roots through `CLAUDE_PLUGIN_DATA` / `GSTACK_HOME` so plugin
+  installs work on every platform.
 
-## Skill workflow
+## Key conventions
 
-- `SKILL.md` files are generated from `.tmpl` templates.
-- Edit the `.tmpl` file, then run `bun run gen:skill-docs`.
-- Commit both the template and the generated file together.
-- Keep skill bodies concise. Variant-specific detail belongs in helper files or referenced docs, not repeated prose.
-
-## Writing templates
-
-- Treat templates as prompt documents, not shell scripts.
-- Keep bash blocks self-contained. Do not rely on state carrying across blocks.
-- Prefer plain English control flow over nested bash logic.
-- Use dynamic branch detection; do not hardcode `main`.
-- Treat legacy `AskUserQuestion` steps as conditional requests for genuinely missing information, not mandatory pauses. Reuse existing answers and authorization; use an available Codex question tool or concise chat only when the unresolved choice matters. Routine parameters can be inferred.
-
-## Browser rules
-
-- Use the bundled `browse` CLI or the `/browse` workflow, not `mcp__claude-in-chrome__*`.
-- If you add a browse command, update `browse/src/commands.ts` and rebuild.
-- If you add a snapshot flag, update `browse/src/snapshot.ts` and rebuild.
-
-## Local dev mode
-
-- `bin/dev-setup` creates `.codex/skills/gstack` as a symlink to this repo so Codex reads skills directly from the working tree.
-- `bin/dev-teardown` removes the local symlinks and falls back to `~/.codex/skills/gstack`.
-- During large refactors, avoid half-generated skill files in a live symlinked install.
-
-## Testing and evals
-
-- Tier 1: static validation and unit/integration tests via `bun test`
-- Tier 2: E2E via `codex exec --json`
-- Tier 3: LLM-as-judge via `codex exec --json`
-
-When an eval fails, do not label it "pre-existing" unless you can reproduce the same failure on the base branch.
-
-## Docs and release notes
-
-- `CHANGELOG.md` is user-facing release notes, not contributor notes.
-- Lead with what users can now do.
-- Keep internal refactors and contributor-only details compressed.
-
-## Legacy note
-
-`CLAUDE.md` is kept for backward compatibility and historical context. For Codex-driven work in this repository, prefer `AGENTS.md`.
+- SKILL.md files are **generated** from `.tmpl` templates. Edit the template, not the output.
+- Run `bun run gen:skill-docs --host codex` to regenerate Codex-specific output.
+- The browse binary provides headless browser access. Use `$B <command>` in skills.
+- Safety skills (careful, freeze, guard) use inline advisory prose — always confirm before destructive operations.
+- State paths resolve via `bin/gstack-paths` (sourced via `eval "$(...)"`). Honors `GSTACK_HOME`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_PLANS_DIR`.
+- The `claude` CLI binary resolves via `browse/src/claude-bin.ts` (`Bun.which()` + `GSTACK_CLAUDE_BIN` override). Set `GSTACK_CLAUDE_BIN=wsl` plus `GSTACK_CLAUDE_BIN_ARGS='["claude"]'` to run Claude through WSL on Windows.
